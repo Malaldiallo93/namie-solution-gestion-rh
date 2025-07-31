@@ -1,0 +1,12 @@
+# Configuration MySQL pour Laravel - Template
+# Copiez ces lignes dans votre fichier hr-backend/.env
+
+# Remplacer la section DB_CONNECTION par :
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=data_hr
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Note: Remplacez DB_PASSWORD par votre mot de passe MySQL si nécessaire 
