@@ -8,6 +8,15 @@ export default defineConfig({
     'process.env.VITE_APP_TITLE': JSON.stringify(process.env.VITE_APP_TITLE),
   },
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,

@@ -14,7 +14,15 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // Phase 1 - Fondations
+            PermissionSeeder::class,
+            RoleSeeder::class,
+            DepartmentSeeder::class,  // Créer les départements avant les employés
             EmployeeSeeder::class,
+            
+            // Phase 2 - Gestion complète des congés et absences
+            LeaveRuleSeeder::class,
+            LeavePeriodSeeder::class,
         ]);
     }
 }

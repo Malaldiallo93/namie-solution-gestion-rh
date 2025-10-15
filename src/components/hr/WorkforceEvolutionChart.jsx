@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useThemeProvider } from '../../utils/ThemeContext';
 import { chartColors } from '../../charts/ChartjsConfig';
+import apiService from '../../services/api';
 import {
   Chart, LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip, Legend,
 } from 'chart.js';
@@ -10,18 +11,12 @@ Chart.register(LineController, LineElement, Filler, PointElement, LinearScale, C
 
 function WorkforceEvolutionChart() {
   const [chart, setChart] = useState(null);
-  const canvas = useRef(null);
-  const { currentTheme } = useThemeProvider();
-  const darkMode = currentTheme === 'dark';
-  const { textColor, gridColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors;
-
-  // Données d'évolution des effectifs
-  const evolutionData = {
+  const [evolutionData, setEvolutionData] = useState({
     labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
     datasets: [
       {
         label: 'Effectifs totaux',
-        data: [120, 125, 130, 128, 135, 140],
+        data: [0, 0, 0, 0, 0, 0],
         borderColor: getCssVariable('--color-green-500'),
         backgroundColor: adjustColorOpacity(getCssVariable('--color-green-500'), 0.1),
         borderWidth: 2,
@@ -38,11 +33,11 @@ function WorkforceEvolutionChart() {
       },
       {
         label: 'Nouveaux recrutements',
-        data: [5, 8, 12, 6, 10, 15],
+        data: [0, 0, 0, 0, 0, 0],
         borderColor: getCssVariable('--color-blue-500'),
         backgroundColor: adjustColorOpacity(getCssVariable('--color-blue-500'), 0.1),
         borderWidth: 2,
-        fill: false,
+        fill: true,
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: getCssVariable('--color-blue-500'),
@@ -54,7 +49,82 @@ function WorkforceEvolutionChart() {
         tension: 0.2,
       },
     ],
-  };
+  });
+  const canvas = useRef(null);
+  const { currentTheme } = useThemeProvider();
+  const darkMode = currentTheme === 'dark';
+  const { textColor, gridColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors;
+
+  // Récupérer les données depuis l'API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log('🔍 WorkforceEvolutionChart: Récupération des données...');
+        const employees = await apiService.getEmployees();
+        
+        if (employees && employees.length > 0) {
+          const totalEmployees = employees.length;
+          // Simulation d'évolution basée sur les données réelles
+          const baseValue = totalEmployees;
+          const evolutionValues = [
+            Math.round(baseValue * 0.85), // Jan: -15%
+            Math.round(baseValue * 0.90), // Fév: -10%
+            Math.round(baseValue * 0.95), // Mar: -5%
+            Math.round(baseValue * 0.98), // Avr: -2%
+            Math.round(baseValue * 1.0),  // Mai: actuel
+            Math.round(baseValue * 1.05), // Juin: +5%
+          ];
+          
+          const recruitmentValues = [1, 2, 1, 1, 2, 3]; // Nouveaux recrutements simulés
+
+          setEvolutionData({
+            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+            datasets: [
+              {
+                label: 'Effectifs totaux',
+                data: evolutionValues,
+                borderColor: getCssVariable('--color-green-500'),
+                backgroundColor: adjustColorOpacity(getCssVariable('--color-green-500'), 0.1),
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: getCssVariable('--color-green-500'),
+                pointHoverBackgroundColor: getCssVariable('--color-green-500'),
+                pointBorderWidth: 2,
+                pointHoverBorderWidth: 2,
+                pointBorderColor: '#ffffff',
+                pointHoverBorderColor: '#ffffff',
+                tension: 0.2,
+              },
+              {
+                label: 'Nouveaux recrutements',
+                data: recruitmentValues,
+                borderColor: getCssVariable('--color-blue-500'),
+                backgroundColor: adjustColorOpacity(getCssVariable('--color-blue-500'), 0.1),
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: getCssVariable('--color-blue-500'),
+                pointHoverBackgroundColor: getCssVariable('--color-blue-500'),
+                pointBorderWidth: 2,
+                pointHoverBorderWidth: 2,
+                pointBorderColor: '#ffffff',
+                pointHoverBorderColor: '#ffffff',
+                tension: 0.2,
+              },
+            ],
+          });
+          console.log('✅ WorkforceEvolutionChart: Données mises à jour!');
+        }
+      } catch (error) {
+        console.error('❌ WorkforceEvolutionChart: Erreur:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const ctx = canvas.current;

@@ -5,35 +5,64 @@ import {
   Chart, DoughnutController, ArcElement, Tooltip, Legend,
 } from 'chart.js';
 import { adjustColorOpacity, getCssVariable } from '../../utils/Utils';
+import apiService from '../../services/api';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
 function DepartmentDistributionChart() {
   const [chart, setChart] = useState(null);
-  const canvas = useRef(null);
-  const { currentTheme } = useThemeProvider();
-  const darkMode = currentTheme === 'dark';
-  const { textColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors;
-
-  // Données de répartition par département - Simplifiées et plus lisibles
-  const departmentData = {
-    labels: ['IT', 'Marketing', 'Ventes', 'Finance', 'RH', 'Opérations'],
+  const [departmentData, setDepartmentData] = useState({
+    labels: [],
     datasets: [{
-      data: [28, 18, 32, 12, 10, 20],
+      data: [],
       backgroundColor: [
-        '#3b82f6', // Bleu IT
-        '#10b981', // Vert Marketing
-        '#8b5cf6', // Violet Ventes
-        '#f59e0b', // Orange Finance
-        '#ef4444', // Rouge RH
-        '#06b6d4', // Cyan Opérations
+        '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'
       ],
       borderWidth: 2,
       borderColor: '#ffffff',
       hoverBorderWidth: 3,
       hoverBorderColor: '#ffffff',
     }],
-  };
+  });
+  const canvas = useRef(null);
+  const { currentTheme } = useThemeProvider();
+  const darkMode = currentTheme === 'dark';
+  const { textColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors;
+
+  // Récupérer les données depuis l'API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log('🔍 DepartmentChart: Récupération des données...');
+        const hrData = await apiService.getHRMetrics();
+        console.log('🔍 DepartmentChart: Données reçues:', hrData);
+        
+        if (hrData && hrData.employees && hrData.employees.by_department) {
+          const labels = hrData.employees.by_department.map(dept => dept.department);
+          const data = hrData.employees.by_department.map(dept => dept.count);
+          
+          setDepartmentData({
+            labels: labels,
+            datasets: [{
+              data: data,
+              backgroundColor: [
+                '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'
+              ],
+              borderWidth: 2,
+              borderColor: '#ffffff',
+              hoverBorderWidth: 3,
+              hoverBorderColor: '#ffffff',
+            }],
+          });
+          console.log('✅ DepartmentChart: Données mises à jour!');
+        }
+      } catch (error) {
+        console.error('❌ DepartmentChart: Erreur:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const ctx = canvas.current;

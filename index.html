@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Namie-RH - Système de Gestion RH</title>
     <script>
-      if (localStorage.theme === 'dark' || !('theme' in localStorage)) {
+      // Force le thème clair par défaut pour éviter la page noire
+      if (localStorage.theme === 'dark') {
         document.querySelector('html').classList.add('dark');
         document.querySelector('html').style.colorScheme = 'dark';
       } else {

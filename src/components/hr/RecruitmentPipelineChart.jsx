@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useThemeProvider } from '../../utils/ThemeContext';
 import { chartColors } from '../../charts/ChartjsConfig';
+import apiService from '../../services/api';
 import {
   Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend,
 } from 'chart.js';
@@ -10,17 +11,11 @@ Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, L
 
 function RecruitmentPipelineChart() {
   const [chart, setChart] = useState(null);
-  const canvas = useRef(null);
-  const { currentTheme } = useThemeProvider();
-  const darkMode = currentTheme === 'dark';
-  const { textColor, gridColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors;
-
-  // Données du pipeline de recrutement
-  const pipelineData = {
+  const [pipelineData, setPipelineData] = useState({
     labels: ['Candidatures', 'Entretiens', 'Offres', 'Embauches'],
     datasets: [{
       label: 'Nombre de candidats',
-      data: [150, 45, 12, 8],
+      data: [0, 0, 0, 0],
       backgroundColor: [
         adjustColorOpacity(getCssVariable('--color-blue-500'), 0.8),
         adjustColorOpacity(getCssVariable('--color-green-500'), 0.8),
@@ -37,7 +32,58 @@ function RecruitmentPipelineChart() {
       borderRadius: 4,
       borderSkipped: false,
     }],
-  };
+  });
+  const canvas = useRef(null);
+  const { currentTheme } = useThemeProvider();
+  const darkMode = currentTheme === 'dark';
+  const { textColor, gridColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors;
+
+  // Récupérer les données depuis l'API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log('🔍 RecruitmentPipelineChart: Récupération des données...');
+        const employees = await apiService.getEmployees();
+        
+        if (employees && employees.length > 0) {
+          // Simulation basée sur le nombre d'employés réels
+          const totalEmployees = employees.length;
+          const candidatures = Math.round(totalEmployees * 8); // 8 candidatures par embauche
+          const entretiens = Math.round(candidatures * 0.3); // 30% passent en entretien
+          const offres = Math.round(entretiens * 0.27); // 27% reçoivent une offre
+          const embauches = Math.round(offres * 0.67); // 67% acceptent
+
+          setPipelineData({
+            labels: ['Candidatures', 'Entretiens', 'Offres', 'Embauches'],
+            datasets: [{
+              label: 'Nombre de candidats',
+              data: [candidatures, entretiens, offres, embauches],
+              backgroundColor: [
+                adjustColorOpacity(getCssVariable('--color-blue-500'), 0.8),
+                adjustColorOpacity(getCssVariable('--color-green-500'), 0.8),
+                adjustColorOpacity(getCssVariable('--color-yellow-500'), 0.8),
+                adjustColorOpacity(getCssVariable('--color-purple-500'), 0.8),
+              ],
+              borderColor: [
+                getCssVariable('--color-blue-500'),
+                getCssVariable('--color-green-500'),
+                getCssVariable('--color-yellow-500'),
+                getCssVariable('--color-purple-500'),
+              ],
+              borderWidth: 1,
+              borderRadius: 4,
+              borderSkipped: false,
+            }],
+          });
+          console.log('✅ RecruitmentPipelineChart: Données mises à jour!');
+        }
+      } catch (error) {
+        console.error('❌ RecruitmentPipelineChart: Erreur:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const ctx = canvas.current;

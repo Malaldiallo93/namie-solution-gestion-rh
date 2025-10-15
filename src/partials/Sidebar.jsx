@@ -15,7 +15,7 @@ function Sidebar({
   const sidebar = useRef(null);
 
   const storedSidebarExpanded = localStorage.getItem("sidebar-expanded");
-  const [sidebarExpanded, setSidebarExpanded] = useState(storedSidebarExpanded === null ? false : storedSidebarExpanded === "true");
+  const [sidebarExpanded, setSidebarExpanded] = useState(storedSidebarExpanded === null ? true : storedSidebarExpanded === "true");
 
   // close on click outside
   useEffect(() => {
@@ -285,7 +285,50 @@ function Sidebar({
                   </div>
                 </NavLink>
               </li>
+              {/* Permissions */}
+              <li className="px-3 py-2">
+                <NavLink
+                  end
+                  to="/permissions"
+                  className={`block text-gray-800 dark:text-gray-100 truncate transition duration-150 ${
+                    pathname === "/permissions" ? "hover:text-gray-900 dark:hover:text-white" : "hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center">
+                    {/* Shield icon */}
+                    <svg className={`shrink-0 ${pathname === "/permissions" ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span className="text-base font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
+                      Permissions
+                    </span>
+                  </div>
+                </NavLink>
+              </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Sidebar toggle button */}
+        <div className="pt-3 mt-auto">
+          <div className="px-3 space-y-1">
+            <button
+              onClick={() => setSidebarExpanded(!sidebarExpanded)}
+              className="block w-full text-left text-gray-800 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white transition duration-150"
+            >
+              <div className="flex items-center">
+                <svg className="shrink-0 text-gray-400 dark:text-gray-500" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  {sidebarExpanded ? (
+                    <path d="M15 18l-6-6 6-6" />
+                  ) : (
+                    <path d="M9 18l6-6-6-6" />
+                  )}
+                </svg>
+                <span className="text-base font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
+                  {sidebarExpanded ? 'Réduire' : 'Étendre'}
+                </span>
+              </div>
+            </button>
           </div>
         </div>
       </div>

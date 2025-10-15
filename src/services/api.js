@@ -31,32 +31,47 @@ class ApiService {
 
   // HR Metrics
   async getHRMetrics() {
+    console.log('🔍 API: Tentative d\'appel /dashboard/metrics...');
     const data = await this.request('/dashboard/metrics');
-    if (data && data.success) return data.data;
+    console.log('🔍 API: Réponse reçue:', data);
     
-    // Fallback mock data
+    if (data && data.success) {
+      console.log('✅ API: Utilisation des vraies données!', data.data);
+      return data.data;
+    }
+    
+    console.warn('⚠️ API: Échec - Utilisation des données mockées');
+    // Fallback mock data (mis à jour avec les vraies données)
     return {
       employees: {
-        total: 120,
-        active: 115,
-        new_this_month: Math.floor(Math.random() * 5) + 1,
-        by_department: []
+        total: 17,
+        active: 17,
+        new_this_month: 2,
+        by_department: [
+          { department: 'IT', count: 7 },
+          { department: 'Marketing', count: 2 },
+          { department: 'Ventes', count: 2 },
+          { department: 'QA', count: 2 },
+          { department: 'RH', count: 2 },
+          { department: 'Finance', count: 1 },
+          { department: 'Test', count: 1 }
+        ]
       },
       attendance: {
-        present_today: Math.floor(Math.random() * 20) + 80,
-        absent_today: Math.floor(Math.random() * 8) + 2,
-        late_today: Math.floor(Math.random() * 5),
-        remote_workers: Math.floor(Math.random() * 15) + 10
+        present_today: 0,
+        absent_today: 0,
+        late_today: 0,
+        remote_workers: 17
       },
       leaves: {
-        pending: Math.floor(Math.random() * 10) + 5,
-        approved_this_month: Math.floor(Math.random() * 8) + 3,
-        sick_leaves: Math.floor(Math.random() * 5) + 2
+        pending: 4,
+        approved_this_month: 0,
+        sick_leaves: 0
       },
       timesheets: {
-        total_hours_this_week: Math.floor(Math.random() * 200) + 400,
-        overtime_hours_this_week: Math.floor(Math.random() * 50) + 20,
-        average_hours_per_day: Math.floor(Math.random() * 2) + 7
+        total_hours_this_week: 0,
+        overtime_hours_this_week: 0,
+        average_hours_per_day: 0
       }
     };
   }

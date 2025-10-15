@@ -4,6 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 function EmployeesMain() {
   const {
     employees,
+    loading,
     searchTerm,
     setSearchTerm,
     filteredEmployees,
@@ -61,6 +62,9 @@ function EmployeesMain() {
               <thead className="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
                 <tr>
                   <th className="p-2 whitespace-nowrap">
+                    <div className="font-semibold text-left">Matricule</div>
+                  </th>
+                  <th className="p-2 whitespace-nowrap">
                     <div className="font-semibold text-left">Employé</div>
                   </th>
                   <th className="p-2 whitespace-nowrap">
@@ -81,8 +85,29 @@ function EmployeesMain() {
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-                {filteredEmployees.map(employee => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="p-8 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mr-3"></div>
+                        <span className="text-gray-600 dark:text-gray-400">Chargement des employés...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                      Aucun employé trouvé
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map(employee => (
                   <tr key={employee.id}>
+                    <td className="p-2 whitespace-nowrap">
+                      <div className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        {employee.employee_number || 'Non défini'}
+                      </div>
+                    </td>
                     <td className="p-2 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 font-semibold text-sm">
@@ -128,7 +153,8 @@ function EmployeesMain() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -136,15 +162,20 @@ function EmployeesMain() {
       </div>
       {/* Add Employee Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-                Ajouter un employé
-              </h2>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto border border-gray-100">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  👤 Ajouter un nouvel employé
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Renseignez les informations complètes de l'employé
+                </p>
+              </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-all duration-200"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -152,88 +183,200 @@ function EmployeesMain() {
               </button>
             </div>
             <form onSubmit={handleAddEmployee} className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Nom complet
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newEmployee.name}
-                    onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})}
-                    className="form-input w-full focus:border-violet-500"
-                    placeholder="Nom et prénom"
-                  />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Section Informations personnelles */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    👤 Informations personnelles
+                  </h3>
+                  
+                  {/* Matricule (saisie manuelle) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Matricule *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newEmployee.employee_number || ''}
+                      onChange={(e) => setNewEmployee({...newEmployee, employee_number: e.target.value.toUpperCase()})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono"
+                      placeholder="ex: NAM-2025-0001"
+                      maxLength="20"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Format suggéré : NAM-AAAA-NNNN (ex: NAM-2025-0001)
+                    </p>
+                  </div>
+
+                  {/* Prénom et Nom */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Prénom *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newEmployee.first_name}
+                        onChange={(e) => setNewEmployee({...newEmployee, first_name: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        placeholder="Prénom"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newEmployee.last_name}
+                        onChange={(e) => setNewEmployee({...newEmployee, last_name: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        placeholder="Nom de famille"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email et Téléphone */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={newEmployee.email}
+                        onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        placeholder="email@entreprise.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Téléphone
+                      </label>
+                      <input
+                        type="tel"
+                        value={newEmployee.phone}
+                        onChange={(e) => setNewEmployee({...newEmployee, phone: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        placeholder="+33 1 23 45 67 89"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={newEmployee.email}
-                    onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})}
-                    className="form-input w-full focus:border-violet-500"
-                    placeholder="email@entreprise.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Département
-                  </label>
-                  <select
-                    required
-                    value={newEmployee.department}
-                    onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})}
-                    className="form-select w-full focus:border-violet-500"
-                  >
-                    <option value="">Sélectionner un département</option>
-                    {departments.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Poste
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newEmployee.position}
-                    onChange={(e) => setNewEmployee({...newEmployee, position: e.target.value})}
-                    className="form-input w-full focus:border-violet-500"
-                    placeholder="Titre du poste"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Date d'embauche
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newEmployee.startDate}
-                    onChange={(e) => setNewEmployee({...newEmployee, startDate: e.target.value})}
-                    className="form-input w-full focus:border-violet-500"
-                  />
+
+                {/* Section Informations professionnelles */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    💼 Informations professionnelles
+                  </h3>
+
+                  {/* Département */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Département *
+                    </label>
+                    <select
+                      required
+                      value={newEmployee.department_id}
+                      onChange={(e) => {
+                        const selectedDept = departments.find(d => d.id == e.target.value);
+                        setNewEmployee({
+                          ...newEmployee, 
+                          department_id: e.target.value,
+                          department: selectedDept ? selectedDept.name : ''
+                        });
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    >
+                      <option value="">Sélectionner un département</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Poste */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Poste *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newEmployee.position}
+                      onChange={(e) => setNewEmployee({...newEmployee, position: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      placeholder="Titre du poste"
+                    />
+                  </div>
+
+                  {/* Date d'embauche et Salaire */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date d'embauche *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={newEmployee.hire_date}
+                        onChange={(e) => setNewEmployee({...newEmployee, hire_date: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Salaire (€) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="100"
+                        value={newEmployee.salary}
+                        onChange={(e) => setNewEmployee({...newEmployee, salary: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        placeholder="35000"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Manager */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Manager (optionnel)
+                    </label>
+                    <select
+                      value={newEmployee.manager_id}
+                      onChange={(e) => setNewEmployee({...newEmployee, manager_id: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    >
+                      <option value="">Aucun manager</option>
+                      {employees.filter(emp => emp.id !== newEmployee.id).map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="btn border-gray-200 hover:border-gray-300 text-gray-600"
+                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="btn bg-violet-500 hover:bg-violet-600 text-white"
+                  className="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-lg transition-all duration-200"
                 >
-                  Ajouter
+                  👤 Ajouter l'employé
                 </button>
               </div>
             </form>

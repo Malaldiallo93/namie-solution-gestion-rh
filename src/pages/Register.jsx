@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
+import apiService from '../services/api';
 
 function Register({ onRegister }) {
   const navigate = useNavigate();
@@ -13,9 +14,36 @@ function Register({ onRegister }) {
     company: '',
     role: ''
   });
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  // Charger les rôles disponibles
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/auth/roles');
+        const data = await response.json();
+        if (data.success) {
+          setAvailableRoles(data.data);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des rôles:', error);
+        // Fallback avec les rôles hardcodés
+        setAvailableRoles([
+          { value: 'super_admin', label: 'Super Administrateur' },
+          { value: 'hr_manager', label: 'Responsable RH' },
+          { value: 'hr_assistant', label: 'Assistant RH' },
+          { value: 'manager', label: 'Manager' },
+          { value: 'employee', label: 'Employé' }
+        ]);
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,46 +66,65 @@ function Register({ onRegister }) {
       return;
     }
     
+    setLoading(true);
+    
     try {
-      // TODO: Implémenter la vraie logique d'inscription avec l'API
-      console.log('Tentative d\'inscription:', formData);
+      console.log('Tentative d\'inscription via API:', formData);
       
-      // Simulation d'inscription réussie avec toutes les informations
-      const userData = {
-        id: Date.now(), // ID temporaire
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        company: formData.company,
-        role: formData.role,
-        avatar: null // Pas d'avatar pour l'inscription manuelle
-      };
+      // Appel à l'API d'inscription
+      const response = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+          company: formData.company,
+          role: formData.role,
+        }),
+      });
+
+      const data = await response.json();
       
-      // Stocker toutes les informations utilisateur
-      localStorage.setItem('authToken', 'demo-token');
-      localStorage.setItem('userEmail', formData.email);
-      localStorage.setItem('userName', userData.name);
-      localStorage.setItem('userFirstName', formData.firstName);
-      localStorage.setItem('userLastName', formData.lastName);
-      localStorage.setItem('userCompany', formData.company);
-      localStorage.setItem('userRole', formData.role);
-      localStorage.setItem('userAvatar', '');
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Erreur lors de l\'inscription');
+      }
+      
+      // Inscription réussie
+      const { user, token } = data.data;
+      
+      // Stocker les informations d'authentification
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('userName', user.name);
+      localStorage.setItem('userFirstName', user.firstName);
+      localStorage.setItem('userLastName', user.lastName);
+      localStorage.setItem('userCompany', user.company);
+      localStorage.setItem('userRole', user.role);
+      localStorage.setItem('userAvatar', user.avatar || '');
       
       // Mettre à jour le service d'authentification
-      authService.token = 'demo-token';
+      authService.token = token;
       
-      console.log('Inscription réussie:', userData);
+      console.log('Inscription réussie via API:', user);
       
       if (onRegister) {
         onRegister();
       }
       
-      // Rediriger vers la page d'accueil après inscription réussie
+      // Rediriger vers la page d'accueil
       navigate('/');
+      
     } catch (error) {
       console.error('Erreur lors de l\'inscription:', error);
-      alert('Erreur lors de l\'inscription. Veuillez réessayer.');
+      alert('Erreur lors de l\'inscription: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -279,13 +326,14 @@ function Register({ onRegister }) {
                     onChange={handleInputChange}
                     className="block w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
                     required
+                    disabled={availableRoles.length === 0}
                   >
                     <option value="">Select Role</option>
-                    <option value="hr-manager">HR Manager</option>
-                    <option value="hr-specialist">HR Specialist</option>
-                    <option value="recruiter">Recruiter</option>
-                    <option value="admin">Administrator</option>
-                    <option value="other">Other</option>
+                    {availableRoles.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -388,9 +436,17 @@ function Register({ onRegister }) {
               {/* Register Button */}
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Create Account
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Création en cours...
+                  </div>
+                ) : (
+                  'Create Account'
+                )}
               </button>
             </form>
 

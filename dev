@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# 🚀 Script de développement simple pour HR Dashboard
+# Usage: ./dev [start|stop|restart]
+
+case "${1:-start}" in
+  "start")
+    echo "🚀 Démarrage de l'application HR Dashboard..."
+    ./start-all.sh
+    ;;
+  "stop")
+    echo "🛑 Arrêt de l'application HR Dashboard..."
+    ./stop-all.sh
+    ;;
+  "restart")
+    echo "🔄 Redémarrage de l'application HR Dashboard..."
+    ./stop-all.sh
+    sleep 2
+    ./start-all.sh
+    ;;
+  *)
+    echo "📋 Usage: ./dev [start|stop|restart]"
+    echo ""
+    echo "🎯 Commandes disponibles:"
+    echo "   ./dev start    - Démarre l'application complète"
+    echo "   ./dev stop     - Arrête l'application complète"  
+    echo "   ./dev restart  - Redémarre l'application complète"
+    echo ""
+    echo "🌐 URLs après démarrage:"
+    echo "   http://localhost:5173  - Frontend React"
+    echo "   http://localhost:8000  - Backend Laravel API"
+    echo "   http://localhost:80    - Application complète (Nginx)"
+    ;;
+esac

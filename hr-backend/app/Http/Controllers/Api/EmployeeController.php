@@ -32,11 +32,13 @@ class EmployeeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
+            'employee_number' => 'required|string|max:20|unique:employees,employee_number',
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:employees,email',
             'phone' => 'nullable|string|max:20',
             'department' => 'required|string|max:255',
+            'department_id' => 'nullable|exists:departments,id',
             'position' => 'required|string|max:255',
             'hire_date' => 'required|date',
             'salary' => 'required|numeric|min:0',

@@ -49,13 +49,22 @@ class LeaveController extends Controller
             ], 422);
         }
 
-        $leave = Leave::create($request->all());
+        try {
+            // Utiliser la nouvelle méthode avec validation complète
+            $leave = Leave::createRequest($request->all());
 
-        return response()->json([
-            'success' => true,
-            'data' => $leave->load(['employee', 'approver']),
-            'message' => 'Leave request created successfully'
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'data' => $leave->load(['employee', 'approver', 'hrApprover']),
+                'message' => 'Demande de congé créée avec succès'
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la création: ' . $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -261,5 +270,144 @@ class LeaveController extends Controller
             'data' => $leave->load(['employee', 'approver']),
             'message' => 'Leave request rejected successfully'
         ]);
+    }
+
+    /**
+     * Workflow d'approbation avancé Phase 2
+     */
+    public function processApproval(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'decision' => 'required|in:approve,reject',
+            'comments' => 'nullable|string|max:1000',
+        ]);
+
+        $leave = Leave::find($id);
+
+        if (!$leave) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Demande de congé non trouvée',
+            ], 404);
+        }
+
+        try {
+            $success = $leave->processApproval(auth()->user(), $request->decision, $request->comments);
+
+            if ($success) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Approbation traitée avec succès',
+                    'data' => $leave->fresh(['employee', 'approver', 'hrApprover']),
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors du traitement de l\'approbation',
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Annuler une demande de congé
+     */
+    public function cancel(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $leave = Leave::find($id);
+
+        if (!$leave) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Demande de congé non trouvée',
+            ], 404);
+        }
+
+        try {
+            $success = $leave->cancel(auth()->user(), $request->reason);
+
+            if ($success) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Demande de congé annulée avec succès',
+                    'data' => $leave->fresh(['employee', 'approver', 'hrApprover']),
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible d\'annuler cette demande',
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir les demandes nécessitant une approbation RH
+     */
+    public function pendingHrApproval(): JsonResponse
+    {
+        if (!auth()->user()->hasRole(['hr_manager', 'super_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Permission insuffisante',
+            ], 403);
+        }
+
+        $leaves = Leave::where('approval_level', 'hr')
+            ->where('status', 'approved') // Approuvé par manager, en attente RH
+            ->with(['employee', 'approver'])
+            ->orderBy('approved_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $leaves,
+            'count' => $leaves->count(),
+        ]);
+    }
+
+    /**
+     * Valider une demande selon les règles métier
+     */
+    public function validateRequest(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'type' => 'required|in:annual,sick,personal,maternity,paternity,unpaid,rtt',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'days_requested' => 'required|integer|min:1',
+        ]);
+
+        try {
+            $validation = \App\Models\LeaveRule::validateLeaveRequest($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $validation,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la validation: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

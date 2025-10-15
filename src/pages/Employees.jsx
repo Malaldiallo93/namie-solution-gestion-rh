@@ -1,86 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import EmployeesMain from './employees/EmployeesMain';
+import apiService from '../services/api';
 
 function Employees() {
   const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmployee, setNewEmployee] = useState({
-    name: '',
+    employee_number: '',
+    first_name: '',
+    last_name: '',
     email: '',
+    phone: '',
     department: '',
+    department_id: '',
     position: '',
-    startDate: '',
-    status: 'active'
+    hire_date: '',
+    salary: '',
+    manager_id: ''
   });
 
-  // Données simulées des employés
+  // Charger les employés et départements depuis l'API
   useEffect(() => {
-    const mockEmployees = [
-      {
-        id: 1,
-        name: 'Marie Dupont',
-        email: 'marie.dupont@entreprise.com',
-        department: 'IT',
-        position: 'Développeuse Senior',
-        startDate: '2022-03-15',
-        status: 'active',
-        avatar: 'MD'
-      },
-      {
-        id: 2,
-        name: 'Jean Martin',
-        email: 'jean.martin@entreprise.com',
-        department: 'Marketing',
-        position: 'Chef de Projet',
-        startDate: '2021-08-22',
-        status: 'active',
-        avatar: 'JM'
-      },
-      {
-        id: 3,
-        name: 'Sophie Bernard',
-        email: 'sophie.bernard@entreprise.com',
-        department: 'Ventes',
-        position: 'Commerciale',
-        startDate: '2023-01-10',
-        status: 'active',
-        avatar: 'SB'
-      },
-      {
-        id: 4,
-        name: 'Pierre Durand',
-        email: 'pierre.durand@entreprise.com',
-        department: 'Finance',
-        position: 'Comptable',
-        startDate: '2020-11-05',
-        status: 'active',
-        avatar: 'PD'
-      },
-      {
-        id: 5,
-        name: 'Emma Leroy',
-        email: 'emma.leroy@entreprise.com',
-        department: 'RH',
-        position: 'Responsable RH',
-        startDate: '2021-06-18',
-        status: 'active',
-        avatar: 'EL'
-      },
-      {
-        id: 6,
-        name: 'Lucas Moreau',
-        email: 'lucas.moreau@entreprise.com',
-        department: 'IT',
-        position: 'Développeur Full-Stack',
-        startDate: '2023-09-12',
-        status: 'active',
-        avatar: 'LM'
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        console.log('🔍 Chargement des données depuis l\'API...');
+        
+        // Charger employés et départements en parallèle
+        const [employeesData, departmentsResponse] = await Promise.all([
+          apiService.getEmployees(),
+          fetch('http://localhost:8000/api/departments').then(res => res.json())
+        ]);
+        
+        console.log('✅ Employés chargés:', employeesData);
+        console.log('✅ Départements chargés:', departmentsResponse);
+        
+        // Transformer les données employés
+        const transformedEmployees = employeesData.map(emp => ({
+          id: emp.id,
+          employee_number: emp.employee_number,
+          name: `${emp.first_name} ${emp.last_name}`,
+          first_name: emp.first_name,
+          last_name: emp.last_name,
+          email: emp.email,
+          department: emp.department,
+          department_id: emp.department_id,
+          position: emp.position,
+          startDate: emp.hire_date,
+          status: 'active',
+          avatar: `${emp.first_name[0]}${emp.last_name[0]}`.toUpperCase(),
+          salary: emp.salary
+        }));
+        
+        setEmployees(transformedEmployees);
+        
+        // Stocker les départements
+        if (departmentsResponse.success) {
+          setDepartments(departmentsResponse.data);
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des données:', error);
+        // En cas d'erreur, garder des tableaux vides
+        setEmployees([]);
+        setDepartments([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setEmployees(mockEmployees);
+    };
+
+    fetchData();
   }, []);
 
   // Filtrer les employés
@@ -93,23 +86,65 @@ function Employees() {
   });
 
   // Ajouter un nouvel employé
-  const handleAddEmployee = (e) => {
+  const handleAddEmployee = async (e) => {
     e.preventDefault();
-    const employee = {
-      id: employees.length + 1,
-      ...newEmployee,
-      avatar: newEmployee.name.split(' ').map(n => n[0]).join('').toUpperCase()
-    };
-    setEmployees([...employees, employee]);
-    setNewEmployee({
-      name: '',
-      email: '',
-      department: '',
-      position: '',
-      startDate: '',
-      status: 'active'
-    });
-    setShowAddModal(false);
+    try {
+      console.log('🔍 Ajout d\'un employé via API:', newEmployee);
+      
+      // Appeler l'API pour créer l'employé
+      const response = await fetch('http://localhost:8000/api/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(newEmployee),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Erreur lors de l\'ajout de l\'employé');
+      }
+      
+      console.log('✅ Employé ajouté avec succès:', data.data);
+      
+      // Recharger la liste des employés
+      const employeesData = await apiService.getEmployees();
+      const transformedEmployees = employeesData.map(emp => ({
+        id: emp.id,
+        employee_number: emp.employee_number,
+        name: `${emp.first_name} ${emp.last_name}`,
+        email: emp.email,
+        department: emp.department,
+        position: emp.position,
+        startDate: emp.hire_date,
+        status: 'active',
+        avatar: `${emp.first_name[0]}${emp.last_name[0]}`.toUpperCase(),
+        salary: emp.salary
+      }));
+      setEmployees(transformedEmployees);
+      
+      // Réinitialiser le formulaire
+      setNewEmployee({
+        employee_number: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        department: '',
+        department_id: '',
+        position: '',
+        hire_date: '',
+        salary: '',
+        manager_id: ''
+      });
+      setShowAddModal(false);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'ajout:', error);
+      alert('Erreur lors de l\'ajout de l\'employé: ' + error.message);
+    }
   };
 
   // Supprimer un employé
@@ -117,7 +152,7 @@ function Employees() {
     setEmployees(employees.filter(emp => emp.id !== id));
   };
 
-  const departments = ['IT', 'Marketing', 'Ventes', 'Finance', 'RH'];
+  // Les départements sont maintenant chargés depuis l'API via le state
 
   return (
     <div className="mb-8">
@@ -158,6 +193,7 @@ function Employees() {
       <Outlet 
         context={{
           employees,
+          loading,
           searchTerm,
           setSearchTerm,
           filteredEmployees,

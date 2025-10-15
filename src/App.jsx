@@ -20,6 +20,7 @@ import Home from './pages/Home';
 import Presence from './pages/Presence';
 import Profile from './pages/Profile';
 import Requests from './pages/Requests';
+import Permissions from './pages/Permissions';
 import Announcements from './pages/Announcements';
 import MyTeam from './pages/MyTeam';
 import Login from './pages/Login';
@@ -85,6 +86,7 @@ function App() {
               <Route path="/presence" element={<Presence />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/requests" element={<Requests />} />
+            <Route path="/permissions" element={<Permissions />} />
               <Route path="/announcements" element={<Announcements />} />
               <Route path="/my-team" element={<MyTeam />} />
               <Route path="/time-tracking" element={<TimeTracking />} />
